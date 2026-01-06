@@ -1,0 +1,46 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id    String @id @default(cuid())
+  email String @unique
+
+  tasks Task[]
+
+  // ✅ Permite crear SOLO tu propio usuario (id debe ser igual al auth().id)
+  @@allow('create', auth() != null && id == auth().id)
+
+  // ✅ Permite leer solo tu propio usuario (opcional, pero recomendado)
+  @@allow('read', auth() != null && id == auth().id)
+
+  // ✅ Permite actualizar solo tu propio usuario (opcional)
+  @@allow('update', auth() != null && id == auth().id)
+}
+
+model Task {
+  id       String  @id @default(cuid())
+  title    String
+  done     Boolean @default(false)
+  isPublic Boolean @default(false)
+
+  owner     User   @relation(fields: [ownerId], references: [id])
+  ownerId   String
+
+  // ✅ Permisos:
+  // Leer: cualquiera puede ver tareas públicas,
+  // y el dueño puede ver las privadas de él
+  @@allow('read', isPublic == true || ownerId == auth().id)
+
+  // Crear: solo si estás logueado y la task queda a tu nombre
+  @@allow('create', auth() != null && ownerId == auth().id)
+
+  // Editar/Borrar: solo el dueño
+  @@allow('update', ownerId == auth().id)
+  @@allow('delete', ownerId == auth().id)
+}
