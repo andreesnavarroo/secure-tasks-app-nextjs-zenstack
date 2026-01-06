@@ -1,29 +1,76 @@
-# Create T3 App
+# Secure Tasks App – Next.js + ZenStack
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+Aplicación **full-stack** construida con **Next.js**, **Prisma** y **ZenStack**, cuyo objetivo es demostrar cómo implementar un **CRUD seguro** utilizando **control de acceso basado en políticas a nivel de modelo**, en lugar de validaciones distribuidas en controladores o rutas.
 
-## What's next? How do I make an app with this?
+Este proyecto muestra una forma escalable y limpia de manejar **autorización**, ideal para aplicaciones SaaS, sistemas multiusuario y entornos donde la seguridad de los datos es crítica.
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+---
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+## 🚀 Stack Tecnológico
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+- **Next.js (App Router)** – Framework full-stack
+- **TypeScript**
+- **Prisma ORM** – Acceso a base de datos
+- **ZenStack v2** – Capa de autorización y CRUD automático
+- **PostgreSQL** – Base de datos relacional
+- **Postman** – Pruebas de la API
 
-## Learn More
+---
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+## 🎯 Objetivo del Proyecto
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
+Demostrar cómo:
+- Centralizar reglas de acceso en el **modelo de datos**
+- Evitar duplicación de lógica de permisos en rutas o controladores
+- Proteger automáticamente todas las operaciones CRUD
+- Separar claramente **autenticación** y **autorización**
 
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
+---
 
-## How do I deploy this?
+## 🔐 Conceptos Clave Implementados
 
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+- Autorización declarativa usando **policies (`@@allow`)**
+- CRUD automático expuesto bajo `/api/model/*`
+- Control de acceso por **propiedad de datos**
+- Visibilidad de datos **públicos vs privados**
+- Seguridad aplicada antes de que cualquier query llegue a la base de datos
+
+---
+
+## 🧱 Arquitectura
+
+Request (Frontend / API Client)
+↓
+Next.js API Route (/api/model/*)
+↓
+ZenStack Access Policies
+↓
+Prisma Client
+↓
+PostgreSQL
+
+python
+Copiar código
+
+ZenStack intercepta todas las operaciones de datos y evalúa las políticas de acceso
+antes de ejecutar cualquier consulta en la base de datos.
+
+---
+
+## 📊 Modelos de Datos
+
+### User
+- Cada usuario solo puede crear y acceder a su propio registro.
+
+### Task
+- Las tareas públicas pueden ser vistas por cualquier usuario.
+- Las tareas privadas solo pueden ser vistas por su propietario.
+- Solo el propietario puede actualizar o eliminar una tarea.
+
+### Ejemplo de políticas en el modelo `Task`
+
+```zmodel
+@@allow('read', isPublic == true || ownerId == auth().id)
+@@allow('create', auth() != null && ownerId == auth().id)
+@@allow('update', ownerId == auth().id)
+@@allow('delete', ownerId == auth().id)
